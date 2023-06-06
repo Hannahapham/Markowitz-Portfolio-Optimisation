@@ -1,0 +1,48 @@
+import numpy as np
+from scipy.optimize import minimize
+
+# Expected returns of each asset
+returns = np.array([0.08, 0.12, 0.06, 0.10, 0.04])
+
+# Covariance matrix
+covariance_matrix = np.array([[0.0225, 0.015, 0.009, 0.020, 0.007],
+                              [0.015, 0.0400, 0.011, 0.023, 0.010],
+                              [0.009, 0.011, 0.0144, 0.016, 0.005],
+                              [0.020, 0.023, 0.016, 0.0324, 0.006],
+                              [0.007, 0.010, 0.005, 0.006, 0.0064]])
+
+# Risk aversion parameter
+risk_aversion = 2
+
+# Define the objective function to maximize portfolio return
+def objective(weights):
+    portfolio_return = np.dot(returns, weights)
+    portfolio_risk = np.sqrt(np.dot(weights.T, np.dot(covariance_matrix, weights)))
+    return -portfolio_return + risk_aversion * portfolio_risk
+
+# Define the constraint function for portfolio weights summing to 1
+def constraint(weights):
+    return np.sum(weights) - 1
+
+# Define the bounds for the weights (0 <= weight <= 1)
+bounds = tuple((0, 1) for _ in range(len(returns)))
+
+# Define the initial guess for weights
+init_guess = np.ones(len(returns)) / len(returns)
+
+# Define the optimization problem
+problem = {'type': 'eq', 'fun': constraint}
+solution = minimize(objective, init_guess, method='SLSQP', bounds=bounds, constraints=problem)
+
+# Extract the optimized weights
+weights = solution.x
+
+# Print the optimized weights and the corresponding portfolio return and risk
+for i in range(len(returns)):
+    print(f"Asset {i+1}: {weights[i]*100:.2f}%")
+
+portfolio_return = -solution.fun
+portfolio_risk = np.sqrt(np.dot(weights.T, np.dot(covariance_matrix, weights)))
+
+print("\nPortfolio Return:", portfolio_return)
+print("Portfolio Risk:", portfolio_risk)
