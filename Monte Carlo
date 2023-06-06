@@ -1,0 +1,74 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.optimize import minimize
+
+# Define the expected returns and covariance matrix
+returns = np.array([0.08, 0.12, 0.06, 0.10, 0.04])
+covariance_matrix = np.array([[0.0225, 0.015, 0.009, 0.020, 0.007],
+                              [0.015, 0.0400, 0.011, 0.023, 0.010],
+                              [0.009, 0.011, 0.0144, 0.016, 0.005],
+                              [0.020, 0.023, 0.016, 0.0324, 0.006],
+                              [0.007, 0.010, 0.005, 0.006, 0.0064]])
+
+# Define the portfolio optimization function
+def portfolio_optimization(returns, covariance_matrix):
+    num_assets = len(returns)
+    
+    # Define the objective function to minimize portfolio variance
+    def objective(weights):
+        return np.dot(weights.T, np.dot(covariance_matrix, weights))
+    
+    # Define the constraint function for portfolio weights summing to 1
+    def constraint(weights):
+        return np.sum(weights) - 1.0
+    
+    # Define the bounds for the weights (0 <= weight <= 1)
+    bounds = tuple((0, 1) for _ in range(num_assets))
+    
+    # Define the initial guess for weights
+    init_guess = np.ones(num_assets) / num_assets
+    
+    # Define the optimization problem
+    problem = {'type': 'eq', 'fun': constraint}
+    solution = minimize(objective, init_guess, method='SLSQP', bounds=bounds, constraints=problem)
+    
+    # Extract the optimized weights
+    weights = solution.x
+    
+    return weights
+
+# Perform portfolio optimization
+weights = portfolio_optimization(returns, covariance_matrix)
+
+# Print the optimized weights and the corresponding portfolio return and risk
+for i in range(len(returns)):
+    print(f"Asset {i+1}: {weights[i]*100:.2f}%")
+    
+portfolio_return = np.dot(returns, weights)
+portfolio_risk = np.sqrt(np.dot(weights.T, np.dot(covariance_matrix, weights)))
+
+print("\nPortfolio Return:", portfolio_return)
+print("Portfolio Risk:", portfolio_risk)
+
+# Generate random portfolios
+num_portfolios = 1000
+portfolio_returns = []
+portfolio_risks = []
+for _ in range(num_portfolios):
+    rand_weights = np.random.random(len(returns))
+    rand_weights /= np.sum(rand_weights)
+    portfolio_returns.append(np.dot(returns, rand_weights))
+    portfolio_risks.append(np.sqrt(np.dot(rand_weights.T, np.dot(covariance_matrix, rand_weights))))
+
+# Create a DataFrame of random portfolios
+portfolio_data = {'Return': portfolio_returns, 'Risk': portfolio_risks}
+for i in range(len(returns)):
+    portfolio_data[f'Asset {i+1}'] = [w[i] for w in np.random.dirichlet(np.ones(len(returns)), num_portfolios)]
+df = pd.DataFrame(portfolio_data)
+
+# Plot the efficient frontier
+plt.figure(figsize=(10, 6))
+plt.scatter(df['Risk'], df['Return'], marker='o', s=10, alpha=0.3)
+plt.scatter(portfolio_risk, portfolio_return, color='red', marker='o', s=100)
+plt.xlabel
